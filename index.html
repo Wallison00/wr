@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wind Rift Counters | Domine o Rift</title>
+  </head>
+  <body>
+    <div id="app">
+      <div class="layout-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <div class="sidebar-header">
+            <h1>WIND RIFT</h1>
+            <p>COUNTERS</p>
+          </div>
+          
+          <nav class="sidebar-nav">
+            <button class="nav-item active" data-route="sem-rota" data-view="grid">
+              <span class="nav-icon">⭐</span>
+              <span class="nav-text">Pendentes</span>
+            </button>
+            <div class="nav-divider">ROTAS</div>
+            <button class="nav-item" data-route="Barão" data-view="grid">
+              <span class="nav-icon">⚔️</span>
+              <span class="nav-text">Barão</span>
+            </button>
+            <button class="nav-item" data-route="Selva" data-view="grid">
+              <span class="nav-icon">🌳</span>
+              <span class="nav-text">Selva</span>
+            </button>
+            <button class="nav-item" data-route="Meio" data-view="grid">
+              <span class="nav-icon">🔮</span>
+              <span class="nav-text">Meio</span>
+            </button>
+            <button class="nav-item" data-route="Dragão" data-view="grid">
+              <span class="nav-icon">🏹</span>
+              <span class="nav-text">Dragão</span>
+            </button>
+            <button class="nav-item" data-route="Suporte" data-view="grid">
+              <span class="nav-icon">🛡️</span>
+              <span class="nav-text">Suporte</span>
+            </button>
+            <div class="nav-divider">ESPECIAL</div>
+            <button class="nav-item highlight" data-view="picks-bans">
+              <span class="nav-icon">🔥</span>
+              <span class="nav-text">Picks & Bans</span>
+            </button>
+            
+            <div class="nav-divider">SISTEMA</div>
+            <button id="exportBtn" class="nav-item secondary">📥 Exportar JSON</button>
+            <button id="importBtn" class="nav-item secondary">📤 Importar JSON</button>
+            <button id="syncBtn" class="nav-item secondary">🔄 Sincronizar Tudo</button>
+            <button id="resetBtn" class="nav-item danger">♻️ Resetar Tudo</button>
+          </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+          <!-- Main Grid View -->
+          <div id="mainGridView">
+            <header class="top-header">
+              <div class="header-info">
+                <h2 id="viewTitle">Pendentes de Cadastro</h2>
+                <p id="viewSubtitle">Heróis que ainda não possuem rotas definidas</p>
+              </div>
+              <div class="controls">
+                <div class="search-container">
+                  <input type="text" id="searchInput" placeholder="Buscar Campeão..." />
+                </div>
+                <button id="addChampBtn" class="btn-primary">+ Novo Campeão</button>
+                <input type="file" id="importFile" style="display: none;" accept=".json" />
+              </div>
+            </header>
+            <section class="champions-grid" id="championsGrid"></section>
+          </div>
+
+          <!-- Picks & Bans View -->
+          <div id="picksBansView" style="display: none;">
+            <header class="top-header">
+              <div class="header-info">
+                <h2>Simulador de Draft</h2>
+                <div class="user-lane-picker">
+                  <span>SUA ROTA NESTE JOGO:</span>
+                  <div class="lane-chips">
+                    <button class="lane-chip" data-lane="Barão" title="Barão">⚔️</button>
+                    <button class="lane-chip" data-lane="Selva" title="Selva">🌳</button>
+                    <button class="lane-chip" data-lane="Meio" title="Meio">🔮</button>
+                    <button class="lane-chip" data-lane="Dragão" title="Dragão">🏹</button>
+                    <button class="lane-chip" data-lane="Suporte" title="Suporte">🛡️</button>
+                  </div>
+                </div>
+              </div>
+              <div class="controls">
+                <button id="resetDraftBtn" class="btn-secondary">Limpar Draft</button>
+              </div>
+            </header>
+            
+            <div class="draft-container">
+              <!-- Team Left -->
+              <div class="team-column left-team" id="leftTeam">
+                <div class="team-label">SEU TIME</div>
+                <div class="draft-slot empty" data-team="left" data-index="0">
+                  <span class="slot-plus">+</span>
+                </div>
+                <div class="draft-slot empty" data-team="left" data-index="1">
+                  <span class="slot-plus">+</span>
+                </div>
+                <div class="draft-slot empty" data-team="left" data-index="2">
+                  <span class="slot-plus">+</span>
+                </div>
+                <div class="draft-slot empty" data-team="left" data-index="3">
+                  <span class="slot-plus">+</span>
+                </div>
+                <div class="draft-slot empty" data-team="left" data-index="4">
+                  <span class="slot-plus">+</span>
+                </div>
+              </div>
+
+              <!-- Center Grid -->
+              <div class="draft-center">
+                <div class="draft-search">
+                  <input type="text" id="draftSearchInput" placeholder="Pesquisar herói para o draft..." />
+                </div>
+                
+                <div class="draft-hero-tabs" id="draftHeroTabs">
+                  <button class="draft-tab active" data-grid-lane="Todos">TODOS</button>
+                  <button class="draft-tab" data-grid-lane="Barão">BARÃO</button>
+                  <button class="draft-tab" data-grid-lane="Selva">SELVA</button>
+                  <button class="draft-tab" data-grid-lane="Meio">MEIO</button>
+                  <button class="draft-tab" data-grid-lane="Dragão">DRAGÃO</button>
+                  <button class="draft-tab" data-grid-lane="Suporte">SUPORTE</button>
+                </div>
+
+                <div class="draft-hero-grid" id="draftHeroGrid"></div>
+              </div>
+
+              <!-- Team Right -->
+              <div class="team-column right-team" id="rightTeam">
+                <div class="team-label">TIME INIMIGO</div>
+                <div class="draft-slot empty" data-team="right" data-index="0">
+                  <span class="slot-plus">+</span>
+                </div>
+                <div class="draft-slot empty" data-team="right" data-index="1">
+                  <span class="slot-plus">+</span>
+                </div>
+                <div class="draft-slot empty" data-team="right" data-index="2">
+                  <span class="slot-plus">+</span>
+                </div>
+                <div class="draft-slot empty" data-team="right" data-index="3">
+                  <span class="slot-plus">+</span>
+                </div>
+                <div class="draft-slot empty" data-team="right" data-index="4">
+                  <span class="slot-plus">+</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <!-- Modal para adicionar/editar campeão -->
+      <div id="champModal" class="modal">
+        <div class="modal-content">
+          <h2 style="color: var(--primary); margin-bottom: 25px;">Editar Campeão</h2>
+          <form id="champForm">
+            <div class="form-row">
+              <div class="form-group" style="flex: 2;">
+                <label for="champName">Nome do Campeão</label>
+                <input type="text" id="champName" required />
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="champImageFile">Imagem (Upload para Base64)</label>
+                <input type="file" id="champImageFile" accept="image/*" />
+                <input type="hidden" id="champImage" />
+                <div id="champImagePreview" style="margin-top: 10px; width: 40px; height: 40px;"></div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Rotas (Selecione ao menos uma para ele sair dos pendentes)</label>
+              <div class="lane-selector" id="laneSelector">
+                <label class="lane-option"><input type="checkbox" name="lane" value="Barão"><span>Barão</span></label>
+                <label class="lane-option"><input type="checkbox" name="lane" value="Selva"><span>Selva</span></label>
+                <label class="lane-option"><input type="checkbox" name="lane" value="Meio"><span>Meio</span></label>
+                <label class="lane-option"><input type="checkbox" name="lane" value="Dragão"><span>Dragão</span></label>
+                <label class="lane-option"><input type="checkbox" name="lane" value="Suporte"><span>Suporte</span></label>
+              </div>
+            </div>
+            
+            <div class="selection-container">
+              <div class="selection-section">
+                <label class="selection-label weak">FRACA CONTRA</label>
+                <input type="text" class="selection-search" data-type="weak" placeholder="Procurar herói..." />
+                <div class="selected-preview" id="weakSelectedPreview"></div>
+                <div class="selection-grid" id="weakAgainstSelection"></div>
+              </div>
+              <div class="selection-section">
+                <label class="selection-label strong">FORTE CONTRA</label>
+                <input type="text" class="selection-search" data-type="strong" placeholder="Procurar herói..." />
+                <div class="selected-preview" id="strongSelectedPreview"></div>
+                <div class="selection-grid" id="strongAgainstSelection"></div>
+              </div>
+              <div class="selection-section">
+                <label class="selection-label synergy">SINERGIA COM</label>
+                <input type="text" class="selection-search" data-type="synergy" placeholder="Procurar herói..." />
+                <div class="selected-preview" id="synergySelectedPreview"></div>
+                <div class="selection-grid" id="synergyWithSelection"></div>
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" id="cancelBtn">Cancelar</button>
+              <button type="submit" class="btn-primary">Salvar Campeão</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
