@@ -25,7 +25,6 @@ const app = {
     right: [null, null, null, null, null],
     leftLanes: [null, null, null, null, null],
     activeSlot: { team: 'left', index: 0 },
-    userLane: null,
     startingTeam: null,
     currentGridLane: 'Todos'
   },
@@ -68,7 +67,6 @@ const app = {
     this.viewTitle = document.getElementById('viewTitle');
     this.viewSubtitle = document.getElementById('viewSubtitle');
     this.draftSlots = document.querySelectorAll('.draft-slot');
-    this.laneChips = document.querySelectorAll('.lane-chip');
     this.draftTabs = document.querySelectorAll('.draft-tab');
   },
 
@@ -88,7 +86,6 @@ const app = {
     this.selectionSearches.forEach(i => i.oninput = (e) => this.renderGroupedGrid(e.target.dataset.type, e.target.value));
     this.navItems.forEach(i => i.onclick = () => { if (i.dataset.view === 'grid') { this.switchView('grid'); this.switchRoute(i.dataset.route); } else { this.switchView('picks-bans'); } });
     this.draftSlots.forEach(s => s.onclick = () => this.setActiveDraftSlot(s.dataset.team, parseInt(s.dataset.index)));
-    this.laneChips.forEach(c => c.onclick = () => this.setUserDraftLane(c.dataset.lane));
     this.draftTabs.forEach(t => t.onclick = () => this.setDraftGridLane(t.dataset.gridLane));
     this.menuToggleBtn.onclick = () => this.sidebar.classList.toggle('collapsed');
     window.onclick = (e) => { if (e.target === this.modal) this.closeModal(); };
@@ -109,12 +106,6 @@ const app = {
     this.draft.currentGridLane = lane;
     this.renderTabs();
     this.renderDraftHeroGrid(this.draftSearchInput.value);
-  },
-
-  setUserDraftLane(lane) {
-    this.draft.userLane = lane;
-    this.laneChips.forEach(c => c.classList.toggle('active', c.dataset.lane === lane));
-    this.renderDraftSlots(); this.renderDraftHeroGrid(); this.renderTabs();
   },
 
   switchView(view) {
@@ -162,9 +153,8 @@ const app = {
 
   resetDraft() {
     this.draft.left = [null, null, null, null, null]; this.draft.right = [null, null, null, null, null];
-    this.draft.activeSlot = { team: 'left', index: 0 }; this.draft.userLane = null;
+    this.draft.activeSlot = { team: 'left', index: 0 };
     this.draft.startingTeam = null; this.draft.currentGridLane = 'Todos';
-    this.laneChips.forEach(c => c.classList.remove('active'));
     this.renderDraftSlots(); this.renderDraftHeroGrid(); this.renderTabs();
   },
 
@@ -228,7 +218,6 @@ const app = {
     const searchTerm = term.toLowerCase();
     const selectedIds = [...this.draft.left, ...this.draft.right].filter(id => id !== null);
     const filterLane = this.draft.currentGridLane;
-    const userLane = this.draft.userLane;
     const allyPicks = this.draft.left.filter(id => id !== null);
     const enemyPicks = this.draft.right.filter(id => id !== null);
 
@@ -241,19 +230,14 @@ const app = {
     const scoredHeroes = filteredHeroes.map(h => {
       let score = 0;
       const relevantLanes = h.lanes || [];
-      const isUserLane = userLane && relevantLanes.includes(userLane);
       
       relevantLanes.forEach(l => {
           allyPicks.forEach(aId => { if (h.synergy.includes(aId)) score++; });
           enemyPicks.forEach(eId => { if (h.strongAgainst.includes(eId)) score++; });
       });
       
-      return { ...h, score, isUserLane };
-    }).sort((a, b) => {
-        if (a.isUserLane && !b.isUserLane) return -1;
-        if (!a.isUserLane && b.isUserLane) return 1;
-        return b.score - a.score;
-    });
+      return { ...h, score };
+    }).sort((a, b) => b.score - a.score);
 
     if (scoredHeroes.length === 0) {
       this.draftHeroGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #555; padding: 20px;">Nenhum herói encontrado.</div>`;
