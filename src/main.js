@@ -128,24 +128,14 @@ const app = {
     this.draft.activeSlot = { team, index };
     if (this.draft[team][index]) {
       this.draft[team][index] = null;
-      if (team === 'left') this.draft.leftLanes[index] = null;
     }
-    this.renderDraftSlots(); this.renderDraftHeroGrid(); this.renderTabs();
-  },
-
-  setSlotLane(index, lane) {
-    this.draft.leftLanes[index] = lane;
     this.renderDraftSlots(); this.renderDraftHeroGrid(); this.renderTabs();
   },
 
   selectDraftHero(heroId) {
     const { team, index } = this.draft.activeSlot;
     if ([...this.draft.left, ...this.draft.right].includes(heroId)) return;
-    
-    if (team === 'left' && !this.draft.leftLanes[index]) {
-      alert("Selecione primeiramente a rota para este aliado.");
-      return;
-    }
+
 
     if (this.draft.startingTeam === null) this.draft.startingTeam = team;
     this.draft[team][index] = heroId;
@@ -172,7 +162,6 @@ const app = {
 
   resetDraft() {
     this.draft.left = [null, null, null, null, null]; this.draft.right = [null, null, null, null, null];
-    this.draft.leftLanes = [null, null, null, null, null];
     this.draft.activeSlot = { team: 'left', index: 0 }; this.draft.userLane = null;
     this.draft.startingTeam = null; this.draft.currentGridLane = 'Todos';
     this.laneChips.forEach(c => c.classList.remove('active'));
@@ -225,19 +214,9 @@ const app = {
       
       if (heroId) { 
         const h = champions.find(h => h.id === heroId); 
-        const laneLabel = team === 'left' ? this.draft.leftLanes[index] : (h.lanes ? h.lanes.join(', ') : '');
+        const laneLabel = h.lanes ? h.lanes.join(', ') : '';
         slot.innerHTML = `<img src="${h.image}">${laneLabel ? `<span class="slot-lane">${laneLabel}</span>` : ''}`; 
       } 
-      else if (isActive && team === 'left' && !this.draft.leftLanes[index]) {
-        const takenLanes = this.draft.leftLanes.filter(l => l !== null);
-        const freeLanes = ALL_LANES.filter(l => !takenLanes.includes(l));
-        slot.innerHTML = `
-          <div class="slot-lane-picker">
-            <div class="picker-title">SUA ROTA?</div>
-            ${freeLanes.map(l => `<button onclick="event.stopPropagation(); app.setSlotLane(${index}, '${l}')">${l}</button>`).join('')}
-          </div>
-        `;
-      }
       else { 
         slot.innerHTML = `<span class="slot-plus">+</span>`; 
       }
