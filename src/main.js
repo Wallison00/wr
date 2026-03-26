@@ -1,8 +1,15 @@
 import './style.css';
+import { createClient } from '@supabase/supabase-js';
+
+// Configuração do Supabase via Variáveis de Ambiente do Vite
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Inicializa o cliente Supabase
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CHAMP_NAMES = ["Aatrox","Ahri","Akali","Akshan","Alistar","Ambessa","Amumu","Annie","Ashe","AurelionSol","Aurora","Bardo","Blitzcrank","Brand","Braum","Caitlyn","Camille","Corki","Darius","Diana","DrMundo","Draven","Ekko","Evelynn","Ezreal","Fiddlesticks","Fiora","Fizz","Galio","Garen","Gnar","Gragas","Graves","Gwen","Hecarim","Heimerdinger","Irelia","Janna","JarvanIV","Jax","Jayce","Jhin","Jinx","KaiSa","Kalista","Karma","Kassadin","Katarina","Kayle","Kayn","Kennen","KhaZix","Kindred","KogMaw","LeeSin","Leona","Lillia","Lissandra","Lucian","Lulu","Lux","Malphite","Maokai","MasterYi","Milio","MissFortune","MonkeyKing","Mordekaiser","Morgana","Nami","Nasus","Nautilus","Nidalee","Nilah","Nocturne","Nunu","Olaf","Orianna","Ornn","Pantheon","Poppy","Pyke","Rakan","Rammus","Rell","Renekton","Rengar","Riven","Rumble","Ryze","Samira","Senna","Seraphine","Sett","Shen","Shyvana","Singed","Sion","Sivir","Smolder","Sona","Soraka","Swain","Syndra","Talon","Teemo","Thresh","Tristana","Tryndamere","TwistedFate","Twitch","Urgot","Varus","Vayne","Veigar","VelKoz","Vex","Vi","Viego","Viktor","Vladimir","Volibear","Warwick","Xayah","XinZhao","Yasuo","Yone","Yuumi","Zed","Zeri","Ziggs","Zilean","Zoe","Zyra"];
 
-const API_URL = "http://localhost:3001/api/data";
 const ALL_LANES = ["Barão", "Selva", "Meio", "Dragão", "Suporte"];
 const ROUTE_ORDER = [...ALL_LANES, "Pendentes"];
 
@@ -288,7 +295,12 @@ const app = {
   },
 
   async toggleStatusOk(id) {
-    const idx = champions.findIndex(c => c.id === id); if (idx !== -1) { champions[idx].statusOk = !champions[idx].statusOk; await this.saveData(); this.render(); }
+    const idx = champions.findIndex(c => c.id === id); if (idx !== -1) { 
+        champions[idx].statusOk = !champions[idx].statusOk; 
+        const { error } = await supabase.from('champions').update({ statusOk: champions[idx].statusOk }).eq('id', id);
+        if (error) console.error("Update error:", error);
+        this.render(); 
+    }
   },
 
   async syncBidirectional() {
@@ -311,13 +323,30 @@ const app = {
 
   async loadData() {
     try {
-      const resp = await fetch(API_URL); const data = await resp.json();
-      if (data && data.length > 0) champions = data.map(c => ({ ...c, statusOk: c.statusOk || false, weakAgainst: c.weakAgainst || [], strongAgainst: c.strongAgainst || [], synergy: c.synergy || [] }));
-      else { champions = CHAMP_NAMES.map(name => ({ id: name.toLowerCase(), name, lanes: [], statusOk: false, image: `/herois/${name}.png`, weakAgainst: [], strongAgainst: [], synergy: [] })); await this.saveData(); }
-    } catch (err) { champions = JSON.parse(localStorage.getItem('wildrift-counters')) || []; }
+      const { data, error } = await supabase.from('champions').select('*');
+      if (error) throw error;
+      if (data && data.length > 0) {
+        champions = data.map(c => ({ ...c, statusOk: c.statusOk || false, weakAgainst: c.weakAgainst || [], strongAgainst: c.strongAgainst || [], synergy: c.synergy || [] }));
+      } else { 
+        console.warn("Nenhum dado no Supabase. Use o script de seed."); 
+        champions = JSON.parse(localStorage.getItem('wildrift-counters')) || [];
+      }
+    } catch (err) { 
+        console.error("Supabase Error:", err);
+        champions = JSON.parse(localStorage.getItem('wildrift-counters')) || []; 
+    }
   },
 
-  async saveData() { localStorage.setItem('wildrift-counters', JSON.stringify(champions)); try { await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(champions) }); } catch (err) { console.warn("Sync error"); } },
+  async saveData() { 
+    localStorage.setItem('wildrift-counters', JSON.stringify(champions)); 
+    try { 
+        const { error } = await supabase.from('champions').upsert(champions);
+        if (error) throw error;
+    } catch (err) { 
+        console.warn("Sync error:", err); 
+    } 
+  },
+
   exportData() { const ds = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(champions)); const dn = document.createElement('a'); dn.setAttribute("href", ds); dn.setAttribute("download", "backup.json"); dn.click(); },
   importData(ev) { const f = ev.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = async (e) => { const d = JSON.parse(e.target.result); if (Array.isArray(d)) { champions = d; await this.saveData(); this.render(); } }; r.readAsText(f); },
 
@@ -391,15 +420,25 @@ const app = {
     e.preventDefault(); const name = document.getElementById('champName').value; const currentId = this.editingId || name.toLowerCase().replace(/\s+/g, '-');
     const heroData = { id: currentId, name, image: this.champImage.value || `/herois/${name}.png`, lanes: Array.from(this.form.querySelectorAll('input[name="lane"]:checked')).map(cb => cb.value), statusOk: false, weakAgainst: this.modalSelections.weak, strongAgainst: this.modalSelections.strong, synergy: this.modalSelections.synergy };
     if (this.editingId) champions[champions.findIndex(c => c.id === this.editingId)] = heroData; else champions.push(heroData);
+    
+    // Auto-linkagem
     champions.forEach(h => { if (h.id !== currentId) { h.weakAgainst = h.weakAgainst.filter(id => id !== currentId); h.strongAgainst = h.strongAgainst.filter(id => id !== currentId); h.synergy = h.synergy.filter(id => id !== currentId); } });
     heroData.weakAgainst.forEach(bid => { const b = champions.find(h => h.id === bid); if (b && !b.strongAgainst.includes(currentId)) b.strongAgainst.push(currentId); });
     heroData.strongAgainst.forEach(bid => { const b = champions.find(h => h.id === bid); if (b && !b.weakAgainst.includes(currentId)) b.weakAgainst.push(currentId); });
     heroData.synergy.forEach(bid => { const b = champions.find(h => h.id === bid); if (b && !b.synergy.includes(currentId)) b.synergy.push(currentId); });
+    
     await this.saveData(); this.render(); this.closeModal();
   },
 
   handleSearch(e) { this.render(e.target.value.toLowerCase()); },
-  async deleteChamp(id) { if (confirm('Excluir?')) { champions = champions.filter(c => c.id !== id); await this.saveData(); this.render(); } },
+  async deleteChamp(id) { 
+    if (confirm('Excluir?')) { 
+        champions = champions.filter(c => c.id !== id); 
+        const { error } = await supabase.from('champions').delete().eq('id', id);
+        if (error) console.error("Delete error:", error);
+        this.render(); 
+    } 
+  },
 
   render(searchTerm = '') {
     if (currentView !== 'grid') return;
