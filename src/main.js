@@ -39,6 +39,8 @@ const app = {
     this.mainGridView = document.getElementById('mainGridView');
     this.picksBansView = document.getElementById('picksBansView');
     this.draftHeroGrid = document.getElementById('draftHeroGrid');
+    this.sidebar = document.querySelector('.sidebar');
+    this.menuToggleBtn = document.getElementById('menuToggleBtn');
     this.addBtn = document.getElementById('addChampBtn');
     this.resetBtn = document.getElementById('resetBtn');
     this.syncBtn = document.getElementById('syncBtn');
@@ -88,6 +90,7 @@ const app = {
     this.draftSlots.forEach(s => s.onclick = () => this.setActiveDraftSlot(s.dataset.team, parseInt(s.dataset.index)));
     this.laneChips.forEach(c => c.onclick = () => this.setUserDraftLane(c.dataset.lane));
     this.draftTabs.forEach(t => t.onclick = () => this.setDraftGridLane(t.dataset.gridLane));
+    this.menuToggleBtn.onclick = () => this.sidebar.classList.toggle('collapsed');
     window.onclick = (e) => { if (e.target === this.modal) this.closeModal(); };
   },
 
